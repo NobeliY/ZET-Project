@@ -1,9 +1,136 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
-using System.Runtime.CompilerServices;
 using OfficeOpenXml;
 namespace ZET_Project.Classes.Manager
 {
+    public class ExcelPerson
+    {
+        protected internal string employeeName;
+        protected internal int hours;
+        protected internal string? note;
+        protected internal string? date;
+
+        public ExcelPerson(string employeeName, int hours, string? note, string? date)
+        {
+            this.employeeName = employeeName;
+            this.hours = hours;
+            this.note = note;
+            this.date = date;
+
+        }
+    }
+    public class ExcelManager
+    {
+#pragma warning disable 8714
+        protected internal static Dictionary<int, ExcelPerson> ExcelPersons =
+#pragma warning restore 8714
+            new();
+        public static string path = @"..\..\..\Classes\Data\EmployeeReports.xlsx";
+
+        public static void SaveExcelFiles()
+        {
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+            for (int i = 1; i <= 3; i++)
+            {
+                using var src = new ExcelPackage(new FileInfo(path));
+                using var dest = new ExcelPackage(new FileInfo($"Employee{src.Workbook.Worksheets[i].Name}.xlsx"));
+                var wsSrc = src.Workbook.Worksheets[i];
+                var wsDest = dest.Workbook.Worksheets[wsSrc.Name] ?? dest.Workbook.Worksheets.Add(wsSrc.Name);
+                for (var r = 1; r <= wsSrc.Dimension.Rows; r++)
+                {
+                    for (var c = 1; c <= wsSrc.Dimension.Columns; c++) 
+                    {
+                        var cellSrc = wsSrc.Cells[r, c];
+                        var cellDest = wsDest.Cells[r, c];
+                        // Copy value
+                        cellDest.Value = cellSrc.Value;
+                    }
+                }
+                dest.Save();
+            }
+        }
+
+        public void GetReportEmployeeArray(string employeeName, string tableList)
+        {
+            var package = new ExcelPackage(path);
+            int lastRow = 0;
+            int Ci = 1;
+            if ((employeeName.Equals("All") || employeeName.Equals("Все")) && tableList.Equals("All"))
+            {
+                foreach (var sWorksheet in package.Workbook.Worksheets)
+                {
+                    lastRow = sWorksheet.Dimension.End.Row;
+                    while (sWorksheet.Cells[lastRow,1].Value == null)
+                    {
+                        lastRow--;
+                    }
+                    
+                    for (int i = 2; i <= lastRow; i++)
+                    {
+                        ExcelPersons.Add(Ci ,new ExcelPerson(sWorksheet.Cells[$"B{i}"].ToString(), 
+                            int.Parse(sWorksheet.Cells[$"C{i}"].Text),
+                            sWorksheet.Cells[$"D{i}"].Value.ToString(),
+                            sWorksheet.Cells[$"A{i}"].Value.ToString()) 
+                            );
+                        Ci++;
+                    }  
+                }
+            }
+            else
+            {
+                var sheet = package.Workbook.Worksheets[tableList];
+                lastRow = sheet.Dimension.End.Row;
+                while (sheet.Cells[lastRow,1].Value == null)
+                {
+                    lastRow--;
+                }
+
+                for (int i = 2; i <= lastRow; i++)
+                {
+                    if (sheet.Cells[i,2].Value.Equals(employeeName))
+                    {
+                        ExcelPersons.Add(Ci, new ExcelPerson(sheet.Cells[i,2].ToString(),
+                            int.Parse(sheet.Cells[i,3].Value.ToString() ?? string.Empty),
+                            sheet.Cells[i,4].Value.ToString(), sheet.Cells[i,1].Value.ToString()));
+                        Ci++;
+                    }
+                }    
+            }
+        }
+        public void AddHours(string? initials, string? date, int hours, string? note, string? tableList)
+        {
+            var package = new ExcelPackage(path);
+            var sheet = package.Workbook.Worksheets[tableList];
+            int lastrow = sheet.Dimension.End.Row;
+            while (sheet.Cells[lastrow,1].Value == null)
+            {
+                lastrow--;
+            }
+
+            for (int i = 2; i <= lastrow; i++)
+            {
+                if (sheet.Cells[i,1].Value.Equals(date))
+                {
+                    sheet.Cells[i, 3].Value = Int32.Parse(sheet.Cells[i,3].Text) + hours;
+                }
+                else
+                {
+                    if (i == lastrow)
+                    {
+                        sheet.Cells[i + 1, 1].Value = date; // Дата (Например. 11.01.2021)
+                        sheet.Cells[i + 1, 2].Value = initials;     // Фамилия и Имя сотрудника
+                        sheet.Cells[i + 1, 3].Value = hours;        // Количество добавленных часов
+                        sheet.Cells[i + 1, 4].Value = note;         // За что добавили часы
+                    }
+                }
+            }
+
+            package.Save();
+        }
+        
+    }
     public class Report
     {
         public DateTime DateTime { get; set; }
@@ -26,32 +153,36 @@ namespace ZET_Project.Classes.Manager
         private byte[] Generate(Report report)
         {
             var package = new ExcelPackage();
-            if (!File.Exists(@"..\..\..\Classes\Data\EmployeeReports.xlsx"))
+            if (!File.Exists(ExcelManager.path))
             {
-                var sheet = package.Workbook.Worksheets.Add("Test");
-                sheet.Cells["A1"].Value = "Date";
-                sheet.Cells["B1"].Value = "Initials";
-                sheet.Cells["C1"].Value = "Hours";
-                sheet.Cells["D1"].Value = "Note";
+                var sheet = package.Workbook.Worksheets.Add("Образец");
+                sheet.Cells["A1"].Value = "Дата";
+                sheet.Cells["B1"].Value = "Фамилия и Имя сотрудника";
+                sheet.Cells["C1"].Value = "Часы";
+                sheet.Cells["D1"].Value = "Примечание";
+                var sheetD = package.Workbook.Worksheets.Add("Director", sheet);
+                var sheetF = package.Workbook.Worksheets.Add("Freelancer", sheet);
+                var sheetA = package.Workbook.Worksheets.Add("Accountant", sheet);
+                package.Save();
             }
 
-            if (!package.Workbook.Worksheets.Equals(_worksheet))
+            if (package.Workbook.Worksheets[_worksheet] != null)
             {
                 var sheet = package.Workbook.Worksheets.Add(_worksheet);
-                sheet.Cells["A1"].Value = "Date";
-                sheet.Cells["B1"].Value = "Initials";
-                sheet.Cells["C1"].Value = "Hours";
-                sheet.Cells["D1"].Value = "Note";
+                sheet.Cells["A1"].Value = "Дата";
+                sheet.Cells["B1"].Value = "Фамилия и Имя сотрудника";
+                sheet.Cells["C1"].Value = "Часы";
+                sheet.Cells["D1"].Value = "Примечание";
             }
             return package.GetAsByteArray();
         }
 
-        public static void Create(string? sheet)
+        public static void Create(string sheet)
         {
             _worksheet = sheet;
             var reportData = new ReportExcelGenerator().GetReport();
             var reportExcel = new ReportExcelGenerator().Generate(reportData);
-            File.WriteAllBytes(@"..\..\..\Classes\Data\EmployeeReports.xlsx", reportExcel);
+            File.WriteAllBytes(ExcelManager.path, reportExcel);
         }
     }
 }

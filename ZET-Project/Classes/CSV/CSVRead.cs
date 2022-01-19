@@ -2,57 +2,83 @@
 using System.Collections.Generic;
 using System.IO;
 using LumenWorks.Framework.IO.Csv;
+using ZET_Project.Classes.Employees;
+using ZET_Project.Classes.Manager;
 
-
-//using Raschet.Classes.DataBaseScripts;
-
-namespace ZET_Project.CSV
+namespace ZET_Project.Classes.CSV
 {
-    public class CsvRead
+    public static class CsvRead
     {
-        public static List<Person> Personals = new();
-        internal static string[] Headers { get; set; }
+        private static Dictionary<int,Person> _personals = new();
+        private static Dictionary<int, AuthLog> _authLogs = new();
         private static int Cid { get; set; }
-        public static string Post { get; private set; }
-        private static bool Filled;
-        
+        public static string? Post { get; internal set; }
+        private static bool _filled = false;
+
+        internal static Dictionary<int, Person> GetPersonals()
+        {
+            return _personals;
+        }
 
         public static void CsvParser(string path, string login, string password)
         {
-            Filled = false;
-            if (!Filled)
+            RST:
+            if (!_filled)
             {
                 using var streamReader = new StreamReader(path);
                 using CsvReader csvReader = new (streamReader,true);
-
-                Headers = csvReader.GetFieldHeaders();
-
+                string[] headers = csvReader.GetFieldHeaders();
                 while (csvReader.ReadNextRecord())
                 {
-                    int id = Convert.ToInt32(csvReader[0]);
-                    Person item = new()
-                    {
-                        Id = id, Name = csvReader["NAME"], Surname = csvReader["SURNAME"], Post = csvReader["POST"]
-                    };
-                    Personals.Add(item);
-                
+                    var id = Convert.ToInt32(csvReader[0]);
+                    Person item = new(csvReader["NAME"], csvReader["SURNAME"], csvReader["POST"]);
+                    _personals.Add(id,item);
+                    _authLogs.Add(id,new AuthLog(csvReader["LOGIN"], csvReader["PASSWORD"]));
+                    
+                }
+                _filled = true;
+                goto RST;
+            }
+            else
+            {
+                foreach (var peAuthLog in _authLogs)
+                {
                     // Login and Password Massive
-                    var tempLogin = csvReader[4];
-                    var tempPassword = csvReader[5];
-                
-                    if (login.Equals(tempLogin) && password.Equals(tempPassword))
+                    var tempLogin = peAuthLog.Value.Login;
+                    var tempPassword = peAuthLog.Value.Password;
+                    if (login != null && password != null)
                     {
-                        Cid = Convert.ToInt32(csvReader["ID"]);
-                        Post = csvReader["POST"];
-                        AuthorizationForm.Message =
-                            $@"Добро пожаловать, {csvReader["POST"]} {csvReader["NAME"]} {csvReader["SURNAME"]}";
-
+                        if (login.Equals(tempLogin) && password.Equals(tempPassword))
+                        {
+                            Cid = Convert.ToInt32(peAuthLog.Key);
+                                if (peAuthLog.Key.Equals(Cid))
+                                {
+                                    Post = _personals[Cid].Post;
+                                    EmployeeManager.Initials = $"{_personals[Cid].Name} {_personals[Cid].Surname}";
+                                }
+                                
+                            
+                        }
                     }
                 }
-
-                Filled = true;
             }
+
             
+            
+        }
+
+        internal static string GetPost(string employeeNames)
+        {
+            string[] arrayName = employeeNames.Split(' ');
+            foreach (var person in _personals)
+            {
+                if ((person.Value.Surname.Equals(arrayName[0]) || person.Value.Surname.Equals(arrayName[1])) &&
+                    (person.Value.Name.Equals(arrayName[0]) || person.Value.Name.Equals(arrayName[1])))
+                {
+                    return person.Value.Post;
+                }
+            }
+            return "Not State";
         }
         
     }

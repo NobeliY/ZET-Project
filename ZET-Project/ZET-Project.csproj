@@ -8,4 +8,14 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="CsvHelper" Version="27.2.1" />
+      <PackageReference Include="EPPlus" Version="5.8.4" />
+      <PackageReference Include="LumenWorksCsvReader" Version="4.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Classes\Reports" />
+    </ItemGroup>
+
 </Project>
