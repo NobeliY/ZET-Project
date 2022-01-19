@@ -7,32 +7,49 @@ namespace ZET_Project.Classes.Manager
 {
     public class ExcelPerson
     {
-        protected internal string employeeName;
         protected internal int hours;
         protected internal string? note;
         protected internal string? date;
 
-        public ExcelPerson(string employeeName, int hours, string? note, string? date)
+        public ExcelPerson(int hours, string? note, string? date)
         {
-            this.employeeName = employeeName;
             this.hours = hours;
             this.note = note;
             this.date = date;
-
         }
+
+        
+    }
+
+    public class ExcelPersonAll
+    {
+        protected internal int hours;
+        protected internal string? note;
+        protected internal string? date;
+        protected internal string employeeName;
+        public ExcelPersonAll(string employeeName, int hours, string? note, string? date)
+        {
+            this.hours = hours;
+            this.date = date;
+            this.note = note;
+            this.employeeName = employeeName;
+        }
+        
     }
     public class ExcelManager
     {
 #pragma warning disable 8714
-        protected internal static Dictionary<int, ExcelPerson> ExcelPersons =
-#pragma warning restore 8714
+        protected internal static Dictionary<string, ExcelPerson> ExcelPersons =
             new();
+        protected internal static Dictionary<int, ExcelPersonAll> ExcelPersonAlls = 
+            new();
+#pragma warning restore 8714
         public static string path = @"..\..\..\Classes\Data\EmployeeReports.xlsx";
 
         public static void SaveExcelFiles()
         {
             ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-            for (int i = 1; i <= 3; i++)
+            for (int i = 0; i <= 2; i++)
             {
                 using var src = new ExcelPackage(new FileInfo(path));
                 using var dest = new ExcelPackage(new FileInfo($"Employee{src.Workbook.Worksheets[i].Name}.xlsx"));
@@ -56,9 +73,9 @@ namespace ZET_Project.Classes.Manager
         {
             var package = new ExcelPackage(path);
             int lastRow = 0;
-            int Ci = 1;
-            if ((employeeName.Equals("All") || employeeName.Equals("Все")) && tableList.Equals("All"))
+            if ((employeeName.Contains("All") || employeeName.Contains("Все")) && tableList.Contains("All"))
             {
+                int Cid = 0;
                 foreach (var sWorksheet in package.Workbook.Worksheets)
                 {
                     lastRow = sWorksheet.Dimension.End.Row;
@@ -69,14 +86,23 @@ namespace ZET_Project.Classes.Manager
                     
                     for (int i = 2; i <= lastRow; i++)
                     {
-                        ExcelPersons.Add(Ci ,new ExcelPerson(sWorksheet.Cells[$"B{i}"].ToString(), 
-                            int.Parse(sWorksheet.Cells[$"C{i}"].Text),
-                            sWorksheet.Cells[$"D{i}"].Value.ToString(),
-                            sWorksheet.Cells[$"A{i}"].Value.ToString()) 
-                            );
-                        Ci++;
+                        try
+                        {
+                            ExcelPersonAlls.Add(Cid, new ExcelPersonAll(sWorksheet.Cells[$"B{i}"].Text, 
+                                sWorksheet.Cells[$"C{i}"].GetValue<int>(),
+                                note: sWorksheet.Cells[$"D{i}"].Text,
+                                date: sWorksheet.Cells[$"A{i}"].Text));
+                        }
+                        catch
+                        {
+                            /*ExcelPersons[sWorksheet.Cells[$"B{i}"].Text].hours +=
+                                sWorksheet.Cells[$"C{i}"].GetValue<int>();*/
+                            Console.WriteLine("Done");
+                        }
+                        Cid++;
                     }  
                 }
+                
             }
             else
             {
@@ -91,13 +117,13 @@ namespace ZET_Project.Classes.Manager
                 {
                     if (sheet.Cells[i,2].Value.Equals(employeeName))
                     {
-                        ExcelPersons.Add(Ci, new ExcelPerson(sheet.Cells[i,2].ToString(),
-                            int.Parse(sheet.Cells[i,3].Value.ToString() ?? string.Empty),
-                            sheet.Cells[i,4].Value.ToString(), sheet.Cells[i,1].Value.ToString()));
-                        Ci++;
+                        ExcelPersons.Add(sheet.Cells[$"A{i}"].Text, new ExcelPerson(sheet.Cells[$"C{i}"].GetValue<int>(),
+                                note: sheet.Cells[$"D{i}"].Text,
+                                date: sheet.Cells[$"B{i}"].Text));
                     }
                 }    
             }
+            
         }
         public void AddHours(string? initials, string? date, int hours, string? note, string? tableList)
         {
@@ -111,9 +137,9 @@ namespace ZET_Project.Classes.Manager
 
             for (int i = 2; i <= lastrow; i++)
             {
-                if (sheet.Cells[i,1].Value.Equals(date))
+                if (sheet.Cells[i,1].Text.Equals(date))
                 {
-                    sheet.Cells[i, 3].Value = Int32.Parse(sheet.Cells[i,3].Text) + hours;
+                    sheet.Cells[i, 3].Value = sheet.Cells[i,3].GetValue<Int32>() + hours;
                 }
                 else
                 {

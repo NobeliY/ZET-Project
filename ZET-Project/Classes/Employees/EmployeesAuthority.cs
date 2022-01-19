@@ -161,9 +161,8 @@ namespace ZET_Project.Classes.Employees
                                   $"(3). Посмотреть подробный отчет по сотруднику за период. \n" +
                                   $"(4). Добавить сотрудника. \n" +
                                   $" (0). Выход из программы";
-        static Dictionary<int, ExcelPerson> persons = new();
+        static Dictionary<string, ExcelPerson> persons;
         static Dictionary<string, LowPerson> personalsReportData = new();
-        static Dictionary<string, int> HoursPersonals = new();
         private protected void GetReportEmployee(string name, string dateArray)
         {
             int sum = 0;
@@ -173,37 +172,29 @@ namespace ZET_Project.Classes.Employees
             if (name.Contains("All") || name.Contains("Все"))
             {
                 excelManager.GetReportEmployeeArray("All","All");
+                //ExcelManager.ExcelPersonAlls
                 string fullyName;
                 foreach (var (key, value) in CsvRead.GetPersonals())
                 {
-                    fullyName = value.Surname + " " + value.Name;
+                    fullyName = value.Name + " " + value.Surname;
                     personalsReportData.Add(fullyName,
                         new LowPerson().LowPersons(CsvRead.GetPost(fullyName),0));
                     Console.WriteLine(personalsReportData[fullyName]);
                 }
-                string report = $"Отчет по сотрудникам: \n ";
+                string report = $"Отчет по сотрудникам: \n";
                 int hoursSum = 0;
                 long sums = 0;
                 foreach (var variablePersonalsReportData in personalsReportData)
                 {
-                    foreach (var variableExcelPerson in ExcelManager.ExcelPersons)
+                    foreach (var variableExcelPersonAll in ExcelManager.ExcelPersonAlls)
                     {
-                        if (variablePersonalsReportData.Key.Equals(variableExcelPerson.Value.employeeName))
+                        if (variablePersonalsReportData.Key.Equals(variableExcelPersonAll.Value.employeeName))
                         {
-                            try
-                            {
-                                HoursPersonals.Add(variableExcelPerson.Value.employeeName,
-                                    variableExcelPerson.Value.hours);
-                            }
-                            catch
-                            {
-                                // ignored
-                                HoursPersonals[variableExcelPerson.Value.employeeName] += variableExcelPerson.Value.hours;
-                            }
+                            personalsReportData[variablePersonalsReportData.Key].Hours += variableExcelPersonAll.Value.hours;
                         }
-
-                        hoursSum += variableExcelPerson.Value.hours;
+                        
                     }
+                    hoursSum += variablePersonalsReportData.Value.Hours;
 
                     sums += variablePersonalsReportData.Value.power * variablePersonalsReportData.Value.Hours *
                         variablePersonalsReportData.Value.sum + variablePersonalsReportData.Value.summed;
@@ -212,7 +203,7 @@ namespace ZET_Project.Classes.Employees
                         $"{variablePersonalsReportData.Key} отработал {variablePersonalsReportData.Value.Hours.ToString()}. Сумма к выдаче: {variablePersonalsReportData.Value.summed.ToString()} + {(variablePersonalsReportData.Value.sum * variablePersonalsReportData.Value.power * variablePersonalsReportData.Value.Hours).ToString()} = {(variablePersonalsReportData.Value.power * variablePersonalsReportData.Value.Hours * variablePersonalsReportData.Value.sum + variablePersonalsReportData.Value.summed).ToString()} рублей. \n";
                 }
 
-                report += $"Итого отработано {hoursSum}, сумма к выплате {sums}";
+                report += $"Итого отработано {hoursSum.ToString()}, сумма к выплате {sums}";
                 Console.Clear();
                 Console.WriteLine(report);
 
@@ -322,9 +313,9 @@ namespace ZET_Project.Classes.Employees
                     string employeeName = Console.ReadLine();
                     if (employeeName != null)
                     {
-                        if (employeeName.Equals("All") || employeeName.Equals("Все"))
+                        if (employeeName.Contains("All") || employeeName.Contains("Все"))
                         {
-                            GetReportEmployee(employeeName, "All");
+                            GetReportEmployee("All", "All");
                         }
                         else
                         {

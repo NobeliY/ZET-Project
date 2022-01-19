@@ -33,6 +33,7 @@ namespace ZET_Project.Classes.Manager
                 case "accountant":
                     Console.Clear();
                     Console.WriteLine($"{Message}, {CsvRead.Post} {Initials}!");
+                    Thread.Sleep(200);
                     Accountant accountant = new();
                     accountant.SendInformation();
                     ExcelManager.SaveExcelFiles();
@@ -41,6 +42,7 @@ namespace ZET_Project.Classes.Manager
                 case "director":
                     Console.Clear();
                     Console.WriteLine($"{Message}, {CsvRead.Post} {Initials}!");
+                    Thread.Sleep(200);
                     Director director = new();
                     director.SendInformation();
                     ExcelManager.SaveExcelFiles();
