@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
-using OfficeOpenXml;
 using ZET_Project.Classes.CSV;
 using ZET_Project.Classes.Employees;
 
@@ -15,15 +14,14 @@ namespace ZET_Project.Classes.Manager
         public static void Start(string? login, string? password)
         {
             
-            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Classes\Data\Employee.csv");
-            CsvRead.CsvParser(path,login,password);
+            CsvRead.CsvParser(login,password);
             ExcelManager.SaveExcelFiles();
             switch (CsvRead.Post?.ToLower())
             {
                 case "freelancer":
                     Console.Clear();
                     Console.WriteLine($"{Message}, {CsvRead.Post} {Initials}!");
-                    Thread.Sleep(200);
+                    Thread.Sleep(1000);
                     Console.ReadLine();
                     Freelancer freelancer = new();
                     freelancer.SendInformation();
@@ -33,7 +31,7 @@ namespace ZET_Project.Classes.Manager
                 case "accountant":
                     Console.Clear();
                     Console.WriteLine($"{Message}, {CsvRead.Post} {Initials}!");
-                    Thread.Sleep(200);
+                    Thread.Sleep(1000);
                     Accountant accountant = new();
                     accountant.SendInformation();
                     ExcelManager.SaveExcelFiles();
@@ -42,7 +40,7 @@ namespace ZET_Project.Classes.Manager
                 case "director":
                     Console.Clear();
                     Console.WriteLine($"{Message}, {CsvRead.Post} {Initials}!");
-                    Thread.Sleep(200);
+                    Thread.Sleep(1000);
                     Director director = new();
                     director.SendInformation();
                     ExcelManager.SaveExcelFiles();

@@ -2,11 +2,28 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Threading;
 using ZET_Project.Classes.CSV;
 using ZET_Project.Classes.Manager;
 
 namespace ZET_Project.Classes.Employees
 {
+    public class NewEmployee
+    {
+        protected internal string Name;
+        protected internal string Surname;
+        protected internal string Login;
+        protected internal string Password;
+        protected internal string Post;
+        
+
+        public NewEmployee SetNewEmployee(string name, string surname, string post, string login,
+            string password )
+        {
+            return new NewEmployee()
+                {Name = name, Surname = surname, Post = post, Login = login, Password = password};
+        }
+    }
     public class AuthLog
     {
         protected internal string? Login { get; set; }
@@ -287,6 +304,68 @@ namespace ZET_Project.Classes.Employees
             }
         }
 
+        private bool DetectEmployee(string[] fullyName)
+        {
+            foreach (var variablePerson in CsvRead.GetPersonals())
+            {
+                
+                if ((variablePerson.Value.Name.Equals(fullyName[0]) && variablePerson.Value.Surname.Equals(fullyName[1]))
+                    || (variablePerson.Value.Name.Equals(fullyName[1]) && variablePerson.Value.Surname.Equals(fullyName[0])))
+                    return true;
+            }
+            return false;
+        }
+        public void SetNewEmployees()
+        {
+            
+            Dictionary<int, NewEmployee> newEmployees = new();
+            
+            int nums = 0;
+            RSTNumsSet:
+            Console.Clear();
+            Console.WriteLine("Введите количество сотрудников: ");
+            if (int.TryParse(Console.ReadLine(), out nums))
+            {
+                int count = CsvRead.GetLastId();
+                for (int i = 0; i < nums; i++)
+                {
+                    RestartReadFullyName:
+                    Console.Clear();
+                    Console.WriteLine("Введите Имя и Фамилию: ");
+                    string[] fullyName = Console.ReadLine().Split(' ');
+                    if (DetectEmployee(fullyName))
+                    {
+                        Console.WriteLine(
+                            "Сотрудник с таким Именем и Фамилией уже существует в списке. Повторите попытку ввода еще раз!");
+                        Console.ReadLine();
+                        goto RestartReadFullyName;
+                    }
+
+                    Console.WriteLine("Введите должность (Доступно: Director, Accountant, Freelancer): ");
+                    string post = Console.ReadLine();
+                    Console.WriteLine("Установите логин для входа: ");
+                    string login = Console.ReadLine();
+                    Console.WriteLine("Установите пароль для входа: ");
+                    string password = Console.ReadLine();
+                    newEmployees.Add(count, new NewEmployee().SetNewEmployee(fullyName[0],
+                        fullyName[1], post,
+                        login, password));
+                    count++;
+
+                }
+                CsvRead.AddEmployeeListFile(newEmployees);
+            }
+            else
+            {
+                Console.WriteLine("Нужно ввести число, а не текст!");
+                Thread.Sleep(500);
+                goto RSTNumsSet;
+            }
+
+
+
+        }
+
         public override void SendInformation()
         {
             rst:
@@ -341,7 +420,8 @@ namespace ZET_Project.Classes.Employees
                     
                     break;
                 case '4':
-                    
+                    Console.Clear();
+                    SetNewEmployees();
                     break;
                 case '0':
                     Console.WriteLine();

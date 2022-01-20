@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using LumenWorks.Framework.IO.Csv;
 using ZET_Project.Classes.Employees;
 using ZET_Project.Classes.Manager;
@@ -14,18 +15,24 @@ namespace ZET_Project.Classes.CSV
         private static int Cid { get; set; }
         public static string? Post { get; internal set; }
         private static bool _filled = false;
+        private static readonly string Path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\Classes\Data\Employee.csv");
 
         internal static Dictionary<int, Person> GetPersonals()
         {
             return _personals;
         }
 
-        public static void CsvParser(string path, string login, string password)
+        internal static int GetLastId()
+        {
+            return _personals.Count+1;
+        }
+
+        public static void CsvParser( string login, string password)
         {
             RST:
             if (!_filled)
             {
-                using var streamReader = new StreamReader(path);
+                using var streamReader = new StreamReader(Path);
                 using CsvReader csvReader = new (streamReader,true);
                 string[] headers = csvReader.GetFieldHeaders();
                 while (csvReader.ReadNextRecord())
@@ -79,6 +86,26 @@ namespace ZET_Project.Classes.CSV
                 }
             }
             return "Not State";
+        }
+
+        internal static void AddEmployeeListFile(Dictionary<int, NewEmployee> newEmployees)
+        {
+            foreach (var (key, value) in newEmployees)
+            {
+                _personals.Add(key,new Person(value.Name,value.Surname,value.Post));
+                _authLogs.Add(key,new AuthLog(value.Login,value.Password));
+            }
+
+            using (FileStream fileStream = new FileStream(Path, FileMode.Append, FileAccess.Write))
+            {
+                foreach (var (key, value) in newEmployees)
+                {
+                    string newLine = $"\n{key},{value.Name},{value.Surname},{value.Post},{value.Login},{value.Password}";
+                    byte[] buff = Encoding.Default.GetBytes(newLine);
+                    fileStream.Write(buff,0,buff.Length);
+                }
+            }
+            
         }
         
     }
