@@ -55,7 +55,7 @@ namespace ZET_Project.Classes.Employees
                     summed = sum * 160;
                     break;
                 case "Director":
-                    power = 20000/160;
+                    power = 1;
                     sum = 1250;
                     summed = sum * 160;
                     break;
@@ -265,16 +265,33 @@ namespace ZET_Project.Classes.Employees
 
                 string report = $"Отчет по сотруднику: [{name}] за период с [{dateArrays[0]}] по [{dateArrays[1]}] \n ";
                 int hoursSum = 0;
-                foreach (var person in persons)
+                if (CsvRead.GetPost(name) == "Director")
                 {
-                    hoursSum += person.Value.hours;
-                    report += $"{person.Key}, {person.Value.hours.ToString()} часов, {person.Value.note} \n";
-                }
+                    int summed = 20000;
+                    foreach (var (key,value) in persons)
+                    {
+                        hoursSum += value.hours;
+                    }
 
-                int summed = sum * hoursSum;
-                report += $"Итого: {hoursSum} часов, заработано: {summed.ToString()} рублей.";
-                Console.Clear();
-                Console.WriteLine(report);
+                    report +=
+                        $"Есть переработка, составляющая {hoursSum}. Дополнительная оплата в размере {summed} зачтена!";
+                    Console.Clear();
+                    Console.WriteLine(report);
+                }
+                else
+                {
+                    foreach (var person in persons)
+                    {
+                        hoursSum += person.Value.hours;
+                        report += $"{person.Key}, {person.Value.hours.ToString()} часов, {person.Value.note} \n";
+                    }
+
+                    int summed = sum * hoursSum;
+                    report += $"Итого: {hoursSum} часов, заработано: {summed.ToString()} рублей.";
+                    Console.Clear();
+                    Console.WriteLine(report);
+                }
+                
             }
             
         }
